@@ -2,12 +2,11 @@ import requests
 from api_key import API_KEY
 
 def get_comments(video_id):
-    response = get_response(video_id)
+    response = get_response(video_id, max_results=50)
     comments = response_to_comments(response)
     while 'nextPageToken' in response.keys():
         response = get_response(video_id, page_token=response['nextPageToken'])
-        comments += response_to_comments(response)
-    
+        comments.update(response_to_comments(response))
     return comments
 
 def get_response(video_id, page_token=None, max_results=100):
@@ -23,10 +22,15 @@ def get_response(video_id, page_token=None, max_results=100):
     return response.json()
 
 def response_to_comments(response):
-    comments = [
-        item['snippet']['topLevelComment']['snippet']['textOriginal']
-        for item in response['items']
-    ]
+    comments = {}
+    for comment in response['items']:
+        comment = comment['snippet']['topLevelComment']
+        comments[comment['id']] = {
+                'video_id': comment['snippet']['videoId'],
+                'channel_id': comment['snippet']['authorChannelId']['value'],
+                'text': comment['snippet']['textOriginal'],
+                'date': comment['snippet']['updatedAt'].replace('T', ' ')[:-1],
+            }
     return comments
 
 if __name__ == '__main__':
