@@ -1,15 +1,22 @@
+"""This file is for YouTube api functions."""
+
 import requests
 from api_key import API_KEY
 
 def get_comments(video_id):
+    """Gets all `commentThreads` from a YouTube video."""
+    # Get comments from the first page.
     response = get_response(video_id, max_results=50)
     comments = response_to_comments(response)
+
+    # Get comments from the other pages.
     while 'nextPageToken' in response.keys():
         response = get_response(video_id, page_token=response['nextPageToken'])
         comments.update(response_to_comments(response))
     return comments
 
 def get_response(video_id, page_token=None, max_results=100):
+    """Gets the response from YouTube API and converts it to JSON."""
     url = 'https://youtube.googleapis.com/youtube/v3/commentThreads'
     payload = {
         'videoId': video_id,
@@ -22,6 +29,7 @@ def get_response(video_id, page_token=None, max_results=100):
     return response.json()
 
 def response_to_comments(response):
+    """Converts JSON response to `comments` dictionary."""
     comments = {}
     for comment in response['items']:
         comment = comment['snippet']['topLevelComment']

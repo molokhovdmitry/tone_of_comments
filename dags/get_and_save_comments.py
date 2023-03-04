@@ -7,6 +7,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 from api import get_comments
 
+
 @dag(
     dag_id='get-comments',
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
@@ -14,6 +15,10 @@ from api import get_comments
     dagrun_timeout=datetime.timedelta(minutes=60),
 )
 def get_and_save_comments():
+    """
+    This DAG gets comments from YouTube videos and saves them into
+    a postgres database.
+    """
     create_comments_table = PostgresOperator(
         task_id='create_comments_table',
         postgres_conn_id='pg_conn',
@@ -40,7 +45,15 @@ def get_and_save_comments():
 
     @task
     def get_youtube_comments():
-        comments = get_comments('_VB39Jo8mAQ')
+        # Open the file with video ids.
+        with open('/opt/airflow/dags/videos.txt') as file:
+            video_ids = file.read().splitlines()
+        print(video_ids)
+
+        # Get comments from all videos.
+        comments = {}
+        for video_id in video_ids:
+            comments.update(get_comments(video_id))
         return comments
 
     @task
@@ -48,6 +61,8 @@ def get_and_save_comments():
         postgres_hook = PostgresHook(postgres_conn_id='pg_conn')
         conn = postgres_hook.get_conn()
         cur = conn.cursor()
+
+        # Save all comments into the database.
         for comment_id in comments:
             video_id = comments[comment_id]['video_id']
             channel_id = comments[comment_id]['channel_id']
@@ -63,6 +78,6 @@ def get_and_save_comments():
         conn.commit()
 
     comments = get_youtube_comments()
-    create_comments_table >> get_youtube_comments() >> save_comments(comments)
+    create_comments_table >> save_comments(comments)
 
 get_and_save_comments()
