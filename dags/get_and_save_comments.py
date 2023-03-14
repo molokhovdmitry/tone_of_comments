@@ -12,7 +12,6 @@ from api import get_comments
     dag_id='get-comments',
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
     catchup=False,
-    dagrun_timeout=datetime.timedelta(minutes=60),
 )
 def get_and_save_comments():
     """
@@ -21,7 +20,7 @@ def get_and_save_comments():
     """
     create_comments_table = PostgresOperator(
         task_id='create_comments_table',
-        postgres_conn_id='pg_conn',
+        postgres_conn_id='postgres_comment_analyzer',
         sql="""
             CREATE TABLE IF NOT EXISTS comments (
                 id TEXT PRIMARY KEY,
@@ -46,7 +45,7 @@ def get_and_save_comments():
     @task
     def get_youtube_comments():
         # Open the file with video ids.
-        with open('/opt/airflow/dags/videos.txt') as file:
+        with open('dags/videos.txt') as file:
             video_ids = file.read().splitlines()
         print(video_ids)
 
@@ -58,7 +57,7 @@ def get_and_save_comments():
 
     @task
     def save_comments(comments: dict):
-        postgres_hook = PostgresHook(postgres_conn_id='pg_conn')
+        postgres_hook = PostgresHook(postgres_conn_id='postgres_comment_analyzer')
         conn = postgres_hook.get_conn()
         cur = conn.cursor()
 

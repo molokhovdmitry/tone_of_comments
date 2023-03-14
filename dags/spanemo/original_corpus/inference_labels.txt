@@ -1,0 +1,5 @@
+ID	Tweet	anger	anticipation	disgust	fear	joy	love	optimism	pessimism	sadness	surprise	trust
+2018-En-01559	@Adnan__786__ @AsYouNotWish Dont worry Indian army is on its ways to dispatch all Terrorists to Hell	1	1	0	0	0	0	1	0	0	0	1
+2018-En-03739	Academy of Sciences, eschews the normally sober tone of scientific papers and calls the massive loss of wildlife a “biological annihilation	0	0	1	0	0	0	0	0	0	0	0
+2018-En-00385	I blew that opportunity -__- #mad	1	0	1	0	0	0	0	0	1	0	0
+2018-En-03001	This time in 2 weeks I will be 30... 😥	0	0	0	0	1	0	0	0	1	0	0
