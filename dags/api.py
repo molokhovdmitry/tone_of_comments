@@ -1,7 +1,7 @@
 """This file is for YouTube api functions."""
 
 import requests
-from api_key import API_KEY
+from dags.api_key import API_KEY
 
 def get_comments(video_id):
     """Gets all `commentThreads` from a YouTube video."""
@@ -43,4 +43,7 @@ def response_to_comments(response):
 
 if __name__ == '__main__':
     video_id = '_VB39Jo8mAQ'
-    get_comments(video_id)
+    comments = get_comments(video_id)
+    comments = [comments[comment_id]['text']for comment_id in comments]
+    import numpy as np
+    print(np.array(comments))

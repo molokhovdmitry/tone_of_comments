@@ -3,6 +3,7 @@ from transformers import BertTokenizer, AutoTokenizer
 from tqdm import tqdm
 import torch
 import pandas as pd
+import numpy as np
 from ekphrasis.classes.tokenizer import SocialTokenizer
 from ekphrasis.classes.preprocessor import TextPreProcessor
 
@@ -23,11 +24,15 @@ def twitter_preprocessor():
 
 
 class DataClass(Dataset):
-    def __init__(self, args, filename):
+    def __init__(self, args, filename=None, comments=None):
         self.args = args
         self.filename = filename
         self.max_length = int(args['--max-length'])
-        self.data, self.labels = self.load_dataset()
+        if self.filename == None:
+            self.data = np.array(comments)
+            self.labels = None
+        else:
+            self.data, self.labels = self.load_dataset()
 
         if args['--lang'] == 'English':
             self.bert_tokeniser = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
@@ -89,10 +94,12 @@ class DataClass(Dataset):
 
     def __getitem__(self, index):
         inputs = self.inputs[index]
-        labels = self.labels[index]
         label_idxs = self.label_indices[index]
         length = self.lengths[index]
-        return inputs, labels, length, label_idxs
+        if type(self.labels) != type(None):
+            labels = self.labels[index]
+            return inputs, labels, length, label_idxs
+        return inputs, length, label_idxs
 
     def __len__(self):
         return len(self.inputs)

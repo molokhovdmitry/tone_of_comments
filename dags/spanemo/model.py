@@ -58,9 +58,15 @@ class SpanEmo(nn.Module):
         :return: loss, num_rows, y_pred, targets
         """
         #prepare inputs and targets
-        inputs, targets, lengths, label_idxs = batch
+        if len(batch) == 4:
+            inference = False
+            inputs, targets, lengths, label_idxs = batch
+            targets = targets.float().to(device)
+        else:
+            inference = True
+            inputs, lengths, label_idxs = batch
         inputs, num_rows = inputs.to(device), inputs.size(0)
-        label_idxs, targets = label_idxs[0].long().to(device), targets.float().to(device)
+        label_idxs = label_idxs[0].long().to(device)
 
         #Bert encoder
         last_hidden_state = self.bert(inputs)
@@ -69,17 +75,20 @@ class SpanEmo(nn.Module):
         # select span of labels to compare them with ground truth ones
         logits = self.ffn(last_hidden_state).squeeze(-1).index_select(dim=1, index=label_idxs)
 
-        #Loss Function
-        if self.joint_loss == 'joint':
-            cel = F.binary_cross_entropy_with_logits(logits, targets).cuda()
-            cl = self.corr_loss(logits, targets)
-            loss = ((1 - self.alpha) * cel) + (self.alpha * cl)
-        elif self.joint_loss == 'cross-entropy':
-            loss = F.binary_cross_entropy_with_logits(logits, targets).cuda()
-        elif self.joint_loss == 'corr_loss':
-            loss = self.corr_loss(logits, targets)
+        if not inference:
+            #Loss Function
+            if self.joint_loss == 'joint':
+                cel = F.binary_cross_entropy_with_logits(logits, targets).cuda()
+                cl = self.corr_loss(logits, targets)
+                loss = ((1 - self.alpha) * cel) + (self.alpha * cl)
+            elif self.joint_loss == 'cross-entropy':
+                loss = F.binary_cross_entropy_with_logits(logits, targets).cuda()
+            elif self.joint_loss == 'corr_loss':
+                loss = self.corr_loss(logits, targets)
 
         y_pred = self.compute_pred(logits)
+        if inference:
+            return num_rows, y_pred
         return loss, num_rows, y_pred, targets.cpu().numpy()
 
     @staticmethod
