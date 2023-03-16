@@ -1,17 +1,15 @@
 import torch
 from fastapi import FastAPI
-from pydantic import BaseModel
-import numpy as np
 
 from dags.spanemo.model import SpanEmo
 from dags.spanemo.inference import choose_model, preprocess
 from dags.api import get_comments
 
 
-app = FastAPI(title="comment_analyzer")
+app = FastAPI(title='comment_analyzer')
 
 
-@app.on_event("startup")
+@app.on_event('startup')
 def load_model():
     global device
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -28,16 +26,29 @@ def load_model():
     model.to(device)
 
 
-@app.get("/")
+@app.get('/')
 def home():
-    return "comment_analyzer"
+    return 'comment_analyzer'
 
 
-@app.post("/predict")
+@app.post('/predict')
 def predict(video_id):
     comments = get_comments(video_id)
-    comments = [comments[comment_id]['text']for comment_id in comments]
-    batch = preprocess(comments)
+    emotions = ["anger", "anticipation", "disgust", "fear", "joy",
+                "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
+    comments = {
+        comment_id: {
+            'text': comments[comment_id]['text'],
+            'emotions': {emotion: None for emotion in emotions}
+        } for comment_id in comments
+    }
+    batch = [comments[comment_id]['text'] for comment_id in comments]
+    batch = preprocess(batch)
     with torch.no_grad():
-        pred = model(batch, device)[1]
-    return {"Response": pred.tolist()}
+        preds = model(batch, device)[1]
+    
+    for comment_id, pred in zip(comments, preds):
+        for emotion in emotions:
+            comment = comments[comment_id]
+            comment['emotions'][emotion] = int(pred[emotions.index(emotion)])
+    return {'Response': comments}
