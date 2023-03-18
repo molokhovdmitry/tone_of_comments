@@ -6,7 +6,7 @@ from dags.api_key import API_KEY
 def get_comments(video_id):
     """Gets all `commentThreads` from a YouTube video."""
     # Get comments from the first page.
-    response = get_response(video_id, max_results=50)
+    response = get_response(video_id, max_results=100)
     comments = response_to_comments(response)
 
     # Get comments from the other pages.
@@ -33,12 +33,16 @@ def response_to_comments(response):
     comments = {}
     for comment in response['items']:
         comment = comment['snippet']['topLevelComment']
-        comments[comment['id']] = {
-                'video_id': comment['snippet']['videoId'],
-                'channel_id': comment['snippet']['authorChannelId']['value'],
-                'text': comment['snippet']['textOriginal'],
-                'date': comment['snippet']['updatedAt'].replace('T', ' ')[:-1],
-            }
+        try:
+            comments[comment['id']] = {
+                    'video_id': comment['snippet']['videoId'],
+                    'channel_id': comment['snippet']['authorChannelId']['value'],
+                    'text': comment['snippet']['textOriginal'],
+                    'date': comment['snippet']['updatedAt'].replace('T', ' ')[:-1],
+                }
+        except Exception as e:
+            print(e)
+            continue
     return comments
 
 if __name__ == '__main__':

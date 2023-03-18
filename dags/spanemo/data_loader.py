@@ -24,9 +24,10 @@ def twitter_preprocessor():
 
 
 class DataClass(Dataset):
-    def __init__(self, args, filename=None, comments=None):
+    def __init__(self, args, filename=None, comments=None, preprocessor=None):
         self.args = args
         self.filename = filename
+        self.preprocessor = preprocessor
         self.max_length = int(args['--max-length'])
         if self.filename == None:
             self.data = np.array(comments)
@@ -53,7 +54,10 @@ class DataClass(Dataset):
 
     def process_data(self):
         desc = "PreProcessing dataset {}...".format('')
-        preprocessor = twitter_preprocessor()
+        if not self.preprocessor:
+            preprocessor = twitter_preprocessor()
+        else:
+            preprocessor = self.preprocessor
 
         if self.args['--lang'] == 'English':
             segment_a = "anger anticipation disgust fear joy love optimism hopeless sadness surprise or trust?"
