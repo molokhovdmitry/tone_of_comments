@@ -17,13 +17,13 @@ def acked(err, msg):
         print("Message produced: %s" % (str(msg)))
 
 
-def produce_comments(comments):
-    video_id = list(comments.values())[0]['video_id']
-    comments = json.dumps(comments)
-    producer.produce('comments', key=video_id, value=comments, callback=acked)
+def produce_to_topic(topic, key, value):
+    value = json.dumps(value)
+    producer.produce(topic, key=key, value=value, callback=acked)
     producer.poll(1)
 
 if __name__ == '__main__':
     from dags.api import get_comments
-    comments = get_comments('a7NdLrS63nc')
-    produce_comments(comments)
+    video_id = 'r28ime9wMzM'
+    comments = get_comments(video_id)
+    produce_to_topic('comments', video_id, comments)

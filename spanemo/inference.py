@@ -2,10 +2,10 @@ from pathlib import Path
 
 from torch.utils.data import DataLoader
 
-from dags.spanemo.data_loader import DataClass
+from spanemo.data_loader import DataClass
 
 def choose_model():
-    return Path('dags/spanemo/models/model.pt')
+    return Path('spanemo/models/model.pt')
 
 
 def preprocess(comments, preprocessor):

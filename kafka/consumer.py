@@ -2,15 +2,14 @@ import sys
 
 from confluent_kafka import Consumer, KafkaError, KafkaException
 
-conf = {'bootstrap.servers': 'localhost:9092',
-        'group.id': "app",
-        'enable.auto.commit': False,
-        'auto.offset.reset': 'earliest'}
 
-consumer = Consumer(conf)
+def consume_loop(topics, msg_process):
+    conf = {'bootstrap.servers': 'localhost:9092',
+            'group.id': "spanemo",
+            'enable.auto.commit': False,
+            'auto.offset.reset': 'earliest'}
+    consumer = Consumer(conf)
 
-
-def basic_consume_loop(consumer, topics):
     running = True
     try:
         consumer.subscribe(topics)
@@ -35,13 +34,17 @@ def basic_consume_loop(consumer, topics):
         consumer.close()
 
 
-def msg_process(msg):
-    print(msg)
-
-
 def find_message(video_id, topics, keep_trying=True):
     """This loop finds specified video's message in specified topics."""
+
+    conf = {'bootstrap.servers': 'localhost:9092',
+            'group.id': "app",
+            'enable.auto.commit': False,
+            'auto.offset.reset': 'earliest'}
+    consumer = Consumer(conf)
+
     running = True
+    message = None
     try:
         consumer.subscribe(topics)
 
@@ -66,17 +69,13 @@ def find_message(video_id, topics, keep_trying=True):
                 key = msg.key()
                 if key == video_id.encode():
                     message = msg.value()
-                    consumer.close()
-                    return message
+                    break
 
     finally:
         # Close down consumer to commit final offsets.
         consumer.close()
-
-
-def shutdown():
-    running = False
+        return message
 
 
 if __name__ == '__main__':
-    print(find_message('YeMcTFQhf5c', ['comments'], keep_trying=False))
+    print(find_message('EhJAftuGxKA', ['comments'], keep_trying=False))

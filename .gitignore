@@ -3,6 +3,6 @@ api_key.py
 videos.txt
 airflow/
 *.code-workspace
-dags/spanemo/configs/*
-dags/spanemo/models/*
+spanemo/configs/*
+spanemo/models/*
 commands.txt
