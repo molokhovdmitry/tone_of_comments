@@ -7,7 +7,7 @@ def consume_loop(topics, msg_process):
     conf = {'bootstrap.servers': 'localhost:9092',
             'group.id': "spanemo",
             'enable.auto.commit': False,
-            'auto.offset.reset': 'earliest'}
+            'auto.offset.reset': 'latest'}
     consumer = Consumer(conf)
 
     running = True
