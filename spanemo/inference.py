@@ -8,11 +8,14 @@ def choose_model():
     return Path('spanemo/models/model.pt')
 
 
-def preprocess(comments, preprocessor):
+def preprocess(comments, preprocessor, tokenizer):
     args = {
         '--lang': 'English',
         '--max-length': '128',
     }
-    dataset = DataClass(args, comments=comments, preprocessor=preprocessor)
+    dataset = DataClass(args,
+                        comments=comments,
+                        preprocessor=preprocessor,
+                        tokenizer=tokenizer)
     data_loader = DataLoader(dataset, batch_size=256, shuffle=False)
     return data_loader

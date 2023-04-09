@@ -6,3 +6,6 @@ airflow/
 spanemo/configs/*
 spanemo/models/*
 commands.txt
+*.sh
+*.zip
+spark/

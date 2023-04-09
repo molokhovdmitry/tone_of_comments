@@ -41,7 +41,7 @@ def response_to_comments(response):
                     'date': comment['snippet']['updatedAt'].replace('T', ' ')[:-1],
                 }
         except Exception as e:
-            print(e)
+            print(f"Error: {e}")
             continue
     return comments
 

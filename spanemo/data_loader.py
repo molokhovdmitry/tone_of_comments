@@ -24,10 +24,11 @@ def twitter_preprocessor():
 
 
 class DataClass(Dataset):
-    def __init__(self, args, filename=None, comments=None, preprocessor=None):
+    def __init__(self, args, filename=None, comments=None, preprocessor=None, tokenizer=None):
         self.args = args
         self.filename = filename
         self.preprocessor = preprocessor
+        self.bert_tokenizer = tokenizer
         self.max_length = int(args['--max-length'])
         if self.filename == None:
             self.data = np.array(comments)
@@ -35,12 +36,15 @@ class DataClass(Dataset):
         else:
             self.data, self.labels = self.load_dataset()
 
-        if args['--lang'] == 'English':
-            self.bert_tokeniser = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-        elif args['--lang'] == 'Arabic':
-            self.bert_tokeniser = AutoTokenizer.from_pretrained("asafaya/bert-base-arabic")
-        elif args['--lang'] == 'Spanish':
-            self.bert_tokeniser = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-uncased")
+        if not self.bert_tokenizer:
+            if args['--lang'] == 'English':
+                self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+                # BertTokenizer.save_pretrained()
+                print('test')
+            elif args['--lang'] == 'Arabic':
+                self.bert_tokenizer = AutoTokenizer.from_pretrained("asafaya/bert-base-arabic")
+            elif args['--lang'] == 'Spanish':
+                self.bert_tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-uncased")
 
         self.inputs, self.lengths, self.label_indices = self.process_data()
 
@@ -75,7 +79,7 @@ class DataClass(Dataset):
         inputs, lengths, label_indices = [], [], []
         for x in tqdm(self.data, desc=desc):
             x = ' '.join(preprocessor(x))
-            x = self.bert_tokeniser.encode_plus(segment_a,
+            x = self.bert_tokenizer.encode_plus(segment_a,
                                                 x,
                                                 add_special_tokens=True,
                                                 max_length=self.max_length,
@@ -87,7 +91,7 @@ class DataClass(Dataset):
             lengths.append(input_length)
 
             #label indices
-            label_idxs = [self.bert_tokeniser.convert_ids_to_tokens(input_id).index(label_names[idx])
+            label_idxs = [self.bert_tokenizer.convert_ids_to_tokens(input_id).index(label_names[idx])
                              for idx, _ in enumerate(label_names)]
             label_indices.append(label_idxs)
 

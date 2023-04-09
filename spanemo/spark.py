@@ -1,14 +1,16 @@
-import json
-
 import torch
+
 from ekphrasis.classes.tokenizer import SocialTokenizer
 from ekphrasis.classes.preprocessor import TextPreProcessor
 from transformers import BertTokenizer
 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import udf, lit, concat, collect_list, col, from_json
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
+
 from spanemo.model import SpanEmo
 from spanemo.inference import choose_model, preprocess
-from kafka.consumer import consume_loop, find_message
-from kafka.producer import produce_to_topic
+
 
 def load_model():
     """Loads the model and preprocessor."""
@@ -45,28 +47,43 @@ def load_model():
     global tokenizer
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
 
-def predict(msg):
-    try:
-        # Unpack message.
-        video_id = msg.key().decode()
-        comments = json.loads(msg.value())
+load_model()
 
-        # Create a dictionary with emotions.
-        emotions = ["anger", "anticipation", "disgust", "fear", "joy",
-                    "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
-        comments = {
-            comment_id: {
+
+# Create a Spark session
+spark = SparkSession.builder \
+        .appName("Kafka Consumer") \
+        .getOrCreate()
+
+# Define the Kafka configuration
+kafka_conf = {"kafka.bootstrap.servers": "localhost:9092"}
+
+# Create a Kafka DataFrame using the Spark session
+df = spark \
+    .readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", kafka_conf["kafka.bootstrap.servers"]) \
+    .option("subscribe", "comments") \
+    .option("startingOffsets", "latest") \
+    .option("failOnDataLoss", "false") \
+    .load() \
+
+
+df_json = df.selectExpr("CAST(key AS STRING) as key",
+                        "CAST(value AS STRING) as value")
+
+def predict(data):
+    import json
+
+    comments = json.loads(data)
+    emotions = ["anger", "anticipation", "disgust", "fear", "joy",
+                "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
+    comments = {
+        comment_id: {
                 'text': comments[comment_id]['text'],
                 'emotions': {emotion: None for emotion in emotions}
             } for comment_id in comments
-        }
-    except Exception as e:
-        print(f"Key: {msg.key()}", end='\n')
-        print(f"Value: {msg.value()}", end='\n')
-        print(e)
-        return
-
-    print(f"Predicting for {video_id}.")
+    }
 
     # Get texts from `comments` dictionary and make predictions.
     data = [comments[comment_id]['text'] for comment_id in comments]
@@ -85,14 +102,16 @@ def predict(msg):
             comment = comments[comment_id]
             comment['emotions'][emotion] = int(pred[emotions.index(emotion)])
 
-    # Produce `comments` to `emotions` topic.
-    produce_to_topic('emotions', video_id, comments)
+    return json.dumps(comments)
 
+my_udf = udf(lambda data: predict(data), StringType())
 
-if __name__ == '__main__':
-    # Load the model.
-    load_model()
-    print("Model loaded.")
-
-    # Start the consumer that is subscribed to `comments` topic.
-    consume_loop(['comments'], predict)
+# Create a Kafka Producer for `spark` topic.
+df_json.select(df_json.key, my_udf(df_json.value).alias('value')) \
+    .writeStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", "localhost:9092") \
+    .option("topic", "emotions") \
+    .option("checkpointLocation", "~/projects/comment_analyzer/spark/checkpoints") \
+    .start() \
+    .awaitTermination()
