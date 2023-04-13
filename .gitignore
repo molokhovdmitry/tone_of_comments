@@ -7,5 +7,6 @@ spanemo/configs/*
 spanemo/models/*
 commands.txt
 *.sh
-*.zip
+!spark.sh
+!package.sh
 spark/

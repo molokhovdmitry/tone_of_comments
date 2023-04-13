@@ -1,64 +1,27 @@
-import torch
-
-from ekphrasis.classes.tokenizer import SocialTokenizer
-from ekphrasis.classes.preprocessor import TextPreProcessor
-from transformers import BertTokenizer
-
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import udf, lit, concat, collect_list, col, from_json
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StringType
 
-from spanemo.model import SpanEmo
-from spanemo.inference import choose_model, preprocess
-
-
-def load_model():
-    """Loads the model and preprocessor."""
-
-    # Choose the device and load the model.
-    global device
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    if str(device) == 'cuda:0':
-        print("Currently using GPU: {}".format(device))
-    else:
-        print("Currently using CPU")
-
-    global model
-    model = SpanEmo()
-    path = choose_model()
-    model.load_state_dict(torch.load(path))
-    model.eval()
-    model.to(device)
-
-    # Load the preprocessor.
-    global preprocessor
-    preprocessor = TextPreProcessor(
-        normalize=['url', 'email', 'phone', 'user'],
-        annotate={"hashtag", "elongated", "allcaps", "repeated", 'emphasis', 'censored'},
-        all_caps_tag="wrap",
-        fix_text=False,
-        segmenter="twitter_2018",
-        corrector="twitter_2018",
-        unpack_hashtags=True,
-        unpack_contractions=True,
-        spell_correct_elong=False,
-        tokenizer=SocialTokenizer(lowercase=True).tokenize).pre_process_doc
-
-    global tokenizer
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-
-load_model()
+from spanemo.load_model import model, preprocessor, tokenizer, device
 
 
-# Create a Spark session
+# Create a Spark session.
 spark = SparkSession.builder \
-        .appName("Kafka Consumer") \
-        .getOrCreate()
+    .appName("Model") \
+    .getOrCreate()
 
-# Define the Kafka configuration
+# Use broadcasting to share the model across tasks.
+broadcast = {
+    'model': spark.sparkContext.broadcast(model),
+    'preprocessor': spark.sparkContext.broadcast(preprocessor),
+    'tokenizer': spark.sparkContext.broadcast(tokenizer),
+    'device': spark.sparkContext.broadcast(device)
+}
+
+# Define the Kafka configuration.
 kafka_conf = {"kafka.bootstrap.servers": "localhost:9092"}
 
-# Create a Kafka DataFrame using the Spark session
+# Create a Kafka DataFrame using the Spark session.
 df = spark \
     .readStream \
     .format("kafka") \
@@ -68,13 +31,23 @@ df = spark \
     .option("failOnDataLoss", "false") \
     .load() \
 
-
 df_json = df.selectExpr("CAST(key AS STRING) as key",
                         "CAST(value AS STRING) as value")
 
 def predict(data):
+    """Prediction function."""
     import json
+    import torch
 
+    from spanemo.inference import preprocess
+
+    # Load the broadcasted values.
+    model = broadcast['model'].value
+    preprocessor = broadcast['preprocessor'].value
+    tokenizer = broadcast['tokenizer'].value
+    device = broadcast['device'].value
+
+    # Read data from json string.
     comments = json.loads(data)
     emotions = ["anger", "anticipation", "disgust", "fear", "joy",
                 "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
@@ -104,10 +77,10 @@ def predict(data):
 
     return json.dumps(comments)
 
-my_udf = udf(lambda data: predict(data), StringType())
+prediction_udf = udf(lambda data: predict(data), StringType())
 
-# Create a Kafka Producer for `spark` topic.
-df_json.select(df_json.key, my_udf(df_json.value).alias('value')) \
+# Create a Kafka Producer for `emotions` topic.
+df_json.select(df_json.key, prediction_udf(df_json.value).alias('value')) \
     .writeStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "localhost:9092") \
