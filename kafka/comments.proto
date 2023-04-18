@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package comments;
+
+message Comment {
+  string comment_id = 1;
+  string video_id = 2;
+  string channel_id = 3;
+  string text = 4;
+  string date = 5;
+  bool anger = 6;
+  bool anticipation = 7;
+  bool disgust = 8;
+  bool fear = 9;
+  bool joy = 10;
+  bool love = 11;
+  bool optimism = 12;
+  bool hopeless = 13;
+  bool sadness = 14;
+  bool surprise = 15;
+  bool trust = 16;
+}
+
+message CommentList {
+  repeated Comment comments = 1;
+}

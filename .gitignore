@@ -9,4 +9,5 @@ commands.txt
 *.sh
 !spark.sh
 !package.sh
+!protobuf.sh
 spark/

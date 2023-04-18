@@ -1,16 +1,15 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType
+from pyspark.sql.types import BinaryType
 
 from spanemo.load_model import model, preprocessor, tokenizer, device
-
 
 # Create a Spark session.
 spark = SparkSession.builder \
     .appName("Model") \
     .getOrCreate()
 
-# Use broadcasting to share the model across tasks.
+# Use broadcasting to share the model across workers.
 broadcast = {
     'model': spark.sparkContext.broadcast(model),
     'preprocessor': spark.sparkContext.broadcast(preprocessor),
@@ -31,15 +30,15 @@ df = spark \
     .option("failOnDataLoss", "false") \
     .load() \
 
-df_json = df.selectExpr("CAST(key AS STRING) as key",
-                        "CAST(value AS STRING) as value")
+df = df.selectExpr("CAST(key AS STRING) as key",
+                   "CAST(value AS BINARY) as value")
 
 def predict(data):
-    """Prediction function."""
-    import json
+    """Prediction UDF."""
     import torch
 
     from spanemo.inference import preprocess
+    from kafka.comments_pb2 import CommentList
 
     # Load the broadcasted values.
     model = broadcast['model'].value
@@ -47,20 +46,13 @@ def predict(data):
     tokenizer = broadcast['tokenizer'].value
     device = broadcast['device'].value
 
-    # Read data from json string.
-    comments = json.loads(data)
-    emotions = ["anger", "anticipation", "disgust", "fear", "joy",
-                "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
-    comments = {
-        comment_id: {
-                'text': comments[comment_id]['text'],
-                'emotions': {emotion: None for emotion in emotions}
-            } for comment_id in comments
-    }
+    # Read data from message.
+    comment_list = CommentList()
+    comment_list.ParseFromString(bytes(data))
 
-    # Get texts from `comments` dictionary and make predictions.
-    data = [comments[comment_id]['text'] for comment_id in comments]
-    data_loader = preprocess(data, preprocessor, tokenizer)
+    # Get texts from `comments` protobuf and make predictions.
+    text_values = [comment.text for comment in comment_list.comments]
+    data_loader = preprocess(text_values, preprocessor, tokenizer)
     print("Making predictions.")
     with torch.no_grad():
         for i, batch in enumerate(data_loader):
@@ -70,17 +62,18 @@ def predict(data):
                 preds += list(model(batch, device)[1])
 
     # Fill `comments` with emotions.
-    for comment_id, pred in zip(comments, preds):
+    emotions = ["anger", "anticipation", "disgust", "fear", "joy",
+                "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
+    for comment, pred in zip(comment_list.comments, preds):
         for emotion in emotions:
-            comment = comments[comment_id]
-            comment['emotions'][emotion] = int(pred[emotions.index(emotion)])
+            setattr(comment, emotion, bool(pred[emotions.index(emotion)]))
 
-    return json.dumps(comments)
+    return comment_list.SerializeToString()
 
-prediction_udf = udf(lambda data: predict(data), StringType())
+prediction_udf = udf(lambda data: predict(data), BinaryType())
 
 # Create a Kafka Producer for `emotions` topic.
-df_json.select(df_json.key, prediction_udf(df_json.value).alias('value')) \
+df.select(df.key, prediction_udf(df.value).alias('value')) \
     .writeStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "localhost:9092") \

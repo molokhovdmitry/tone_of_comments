@@ -1,5 +1,3 @@
-import json
-
 from confluent_kafka import Producer
 import socket
 
@@ -18,12 +16,11 @@ def acked(err, msg):
 
 
 def produce_to_topic(topic, key, value):
-    value = json.dumps(value)
     producer.produce(topic, key=key, value=value, callback=acked)
     producer.poll(1)
 
 if __name__ == '__main__':
     from dags.api import get_comments
     video_id = 'r28ime9wMzM'
-    comments = get_comments(video_id)
-    produce_to_topic('comments', video_id, comments)
+    comment_list = get_comments(video_id)
+    produce_to_topic('comments', video_id, comment_list)

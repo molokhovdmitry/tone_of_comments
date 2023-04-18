@@ -21,15 +21,25 @@ const data = await response.json();
 if ('error' in data) {
   alert('Invalid ID. Please enter a valid YouTube video ID.');
 } else {
-  // Create data rows and count the number of emotions
-  const emotionCounts = {};
-  Object.keys(data.Response).forEach(key => {
-    const rowData = data.Response[key];
-    Object.keys(rowData.emotions).forEach(emotion => {
-      if (emotionCounts[emotion] === undefined) {
-        emotionCounts[emotion] = rowData.emotions[emotion];
-      } else {
-        emotionCounts[emotion] += rowData.emotions[emotion];
+  // Count the number of emotions
+  const emotionCounts = {
+    anger: 0,
+    anticipation: 0,
+    disgust: 0,
+    fear: 0,
+    joy: 0,
+    love: 0,
+    optimism: 0,
+    hopeless: 0,
+    sadness: 0,
+    surprise: 0,
+    trust: 0
+  };
+  Object.keys(data.Response.comments).forEach(key => {
+    const rowData = data.Response.comments[key];
+    Object.keys(rowData).forEach(key => {
+      if (emotionCounts.hasOwnProperty(key)){
+        emotionCounts[key] += rowData[key]
       }
     });
   });
