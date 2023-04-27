@@ -39,8 +39,6 @@ class DataClass(Dataset):
         if not self.bert_tokenizer:
             if args['--lang'] == 'English':
                 self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-                # BertTokenizer.save_pretrained()
-                print('test')
             elif args['--lang'] == 'Arabic':
                 self.bert_tokenizer = AutoTokenizer.from_pretrained("asafaya/bert-base-arabic")
             elif args['--lang'] == 'Spanish':

@@ -11,3 +11,5 @@ commands.txt
 !package.sh
 !protobuf.sh
 spark/
+metastore_db/
+derby.log

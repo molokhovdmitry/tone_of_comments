@@ -46,9 +46,6 @@ else:
 #####################################################################
 now = datetime.datetime.now()
 filename = now.strftime("%Y-%m-%d-%H:%M:%S")
-import os
-for i in range(10):
-    print(os.getcwd())
 fw = open('configs/' + filename + '.json', 'a')
 model_path = filename + '.pt'
 args['--checkpoint-path'] = model_path
