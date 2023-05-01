@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from google.protobuf.json_format import MessageToDict
 
-from dags.api import get_comments
+from api.api import get_comments
 from kafka.producer import produce_to_topic
 from kafka.consumer import find_message
 from kafka.comments_pb2 import CommentList

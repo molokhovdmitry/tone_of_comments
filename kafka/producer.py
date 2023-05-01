@@ -20,7 +20,7 @@ def produce_to_topic(topic, key, value):
     producer.poll(1)
 
 if __name__ == '__main__':
-    from dags.api import get_comments
+    from api.api import get_comments
     video_id = 'r28ime9wMzM'
     comment_list = get_comments(video_id)
     produce_to_topic('comments', video_id, comment_list)

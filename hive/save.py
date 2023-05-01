@@ -8,7 +8,7 @@ from kafka.comments_pb2 import CommentList
 
 # Create SparkSession.
 spark = SparkSession.builder \
-.appName("Hive test") \
+.appName("Comment Saver") \
 .config("spark.sql.warehouse.dir", "/user/hive/warehouse") \
 .enableHiveSupport() \
 .getOrCreate()

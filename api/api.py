@@ -2,7 +2,7 @@
 
 import requests
 
-from dags.api_key import API_KEY
+from api.api_key import API_KEY
 from kafka.comments_pb2 import CommentList
 
 def get_comments(video_id):
@@ -65,11 +65,3 @@ def dict_to_protobuf(comment_dict):
         comment.date = comment_data["date"]
 
     return comment_list
-
-
-if __name__ == '__main__':
-    video_id = '_VB39Jo8mAQ'
-    comments = get_comments(video_id)
-    comments = [comments[comment_id]['text']for comment_id in comments]
-    import numpy as np
-    print(np.array(comments))
