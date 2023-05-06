@@ -11,6 +11,8 @@ Options:
     --lang=<str>                      language choice [default: English]
     --test-path=<str>                 file path of the test set [default: ]
 """
+from pathlib import Path
+import wandb
 from learner import EvaluateOnTest
 from model import SpanEmo
 from data_loader import DataClass
@@ -18,7 +20,6 @@ from torch.utils.data import DataLoader
 import torch
 from docopt import docopt
 import numpy as np
-
 
 args = docopt(__doc__)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -41,8 +42,40 @@ print('The number of Test batches: ', len(test_data_loader))
 #############################################################################
 # Run the model on a Test set
 #############################################################################
+from_wandb = args['--model-path'] == 'wandb'
+
+if from_wandb:
+    # Load the latest model.
+    api = wandb.Api()
+    artifact_name = "molokhovdmitry/comment_analyzer/emotions_model:"
+    artifact = api.artifact(artifact_name + "latest", type='model')
+    model_path = artifact.file("artifacts")
+
+    # Try to load best model's F1 score.
+    try:
+        best_artifact = api.artifact(artifact_name + "best", type='model')
+        best_f1_score = best_artifact.metadata["best_f1_macro"]
+    except:
+        best_f1_score = 0
+else:
+    model_path = 'models/' + args['--model-path']
 model = SpanEmo(lang=args['--lang'])
-learn = EvaluateOnTest(model, test_data_loader, model_path='models/' + args['--model-path'])
+learn = EvaluateOnTest(model, test_data_loader, model_path=model_path)
 learn.predict(device=device)
 
+if from_wandb:
+    # Update model's metadata.
+    f1_macro = learn.f1_macro
+    f1_micro = learn.f1_micro
+    jaccard_score = learn.jaccard_score
+    artifact.metadata["f1_macro"] = f1_macro
+    artifact.metadata["f1_micro"] = f1_micro
+    artifact.metadata["jaccard_score"] = jaccard_score
+
+    # Give `best` alias to the model if it has higher F1 score.
+    if learn.f1_macro > best_f1_score:
+        artifact.aliases.append('best')
+        print("Gave the model `best` alias.")
+    artifact.save()
+    print("Saved the model.")
 

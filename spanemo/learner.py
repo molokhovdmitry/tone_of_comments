@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 import torch
 import time
+import wandb
 
 
 class EarlyStopping:
@@ -67,7 +68,13 @@ class Trainer(object):
         self.train_data_loader = train_data_loader
         self.val_data_loader = val_data_loader
         self.filename = filename
-        self.early_stop = EarlyStopping(self.filename, patience=10)
+        self.early_stop = EarlyStopping(self.filename, patience=2)
+
+        # Save dataset artifact to wandb.
+        self.run = wandb.init(project='comment_analyzer')
+        dataset_artifact = wandb.Artifact('corpus', type='dataset')
+        dataset_artifact.add_dir('original_corpus')
+        self.run.log_artifact(dataset_artifact)
 
     def fit(self, num_epochs, args, device='cuda:0'):
         """
@@ -81,6 +88,7 @@ class Trainer(object):
         pbar = master_bar(range(num_epochs))
         headers = ['Train_Loss', 'Val_Loss', 'F1-Macro', 'F1-Micro', 'JS', 'Time']
         pbar.write(headers, table=True)
+        best_stats = []
         for epoch in pbar:
             epoch += 1
             start_time = time.time()
@@ -110,6 +118,40 @@ class Trainer(object):
                      f1_score(y_true, y_pred, average="macro"),
                      f1_score(y_true, y_pred, average="micro"),
                      jaccard_score(y_true, y_pred, average="samples")]
+            
+            # Update best metrics.
+            higher_better = [
+                False,
+                False,
+                True,
+                True,
+                True
+            ]
+
+            if not best_stats:
+                best_stats = stats
+            else:
+                for i in range(len(stats)):
+                    if stats[i] > best_stats[i]:
+                        if higher_better[i]:
+                            best_stats[i] = stats[i]
+                    else:
+                        if not higher_better[i]:
+                            best_stats[i] = stats[i]
+
+            # Log metrics to wandb.
+            wandb.log({
+                "train_loss": stats[0],
+                "val_loss": stats[1],
+                "f1_macro": stats[2],
+                "f1_micro": stats[3],
+                "jaccard_score": stats[4],
+                "best_train_loss": best_stats[0],
+                "best_val_loss": best_stats[1],
+                "best_f1_macro": best_stats[2],
+                "best_f1_micro": best_stats[3],
+                "best_jaccard_score": best_stats[4]
+            })
 
             for stat in stats:
                 str_stats.append(
@@ -121,6 +163,19 @@ class Trainer(object):
             self.early_stop(overall_val_loss, self.model)
             if self.early_stop.early_stop:
                 print("Early stopping")
+
+                # Save model to wandb.
+                model_artifact = wandb.Artifact('emotions_model', type='model')
+                model_path = 'models/' + self.filename + '_checkpoint.pt'
+                model_artifact.add_file(model_path)
+                model_artifact.metadata = {
+                    "run_id": self.run.id,
+                    "train_loss": best_stats[0],
+                    "val_loss": best_stats[1],
+                }
+                self.run.log_artifact(model_artifact)
+                print(f"{model_path} saved to wandb")
+
                 break
                 
     def optimizer(self, args):
@@ -212,6 +267,9 @@ class EvaluateOnTest(object):
         stats = [f1_score(y_true, y_pred, average="macro"),
                  f1_score(y_true, y_pred, average="micro"),
                  jaccard_score(y_true, y_pred, average="samples")]
+        self.f1_macro = stats[0]
+        self.f1_micro = stats[1]
+        self.jaccard_score = stats[2]
 
         for stat in stats:
             str_stats.append(

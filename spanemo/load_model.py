@@ -1,11 +1,12 @@
 import torch
+import wandb
 
 from ekphrasis.classes.tokenizer import SocialTokenizer
 from ekphrasis.classes.preprocessor import TextPreProcessor
 from transformers import BertTokenizer
 
 from spanemo.model import SpanEmo
-from spanemo.inference import choose_model
+
 
 # Choose the device.
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -14,10 +15,15 @@ if str(device) == 'cuda:0':
 else:
     print("Currently using CPU")
 
-# Load the model.
+# Load the model from wandb with `best` alias.
+api = wandb.Api()
+artifact_name = "molokhovdmitry/comment_analyzer/emotions_model:"
+artifact = api.artifact(artifact_name + "best", type='model')
+model_version = artifact.version
+print(f"Model version: {model_version}")
+artifact_dir = artifact.file("spanemo/artifacts")
 model = SpanEmo()
-path = choose_model()
-model.load_state_dict(torch.load(path))
+model.load_state_dict(torch.load(artifact_dir))
 model.eval()
 model.to(device)
 

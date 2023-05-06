@@ -11,4 +11,4 @@
 --num-executors 1 \
 --executor-cores 1 \
 --py-files ~/projects/comment_analyzer/packages.zip \
-~/projects/comment_analyzer/spanemo/spark.py
+~/projects/comment_analyzer/spanemo/spark.py >> ~/projects/comment_analyzer/spark/log.txt

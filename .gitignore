@@ -13,3 +13,7 @@ commands.txt
 spark/
 metastore_db/
 derby.log
+spark-warehouse/
+wandb/
+spanemo/artifacts/*
+_test.py
