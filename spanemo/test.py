@@ -54,7 +54,7 @@ if from_wandb:
     # Try to load best model's F1 score.
     try:
         best_artifact = api.artifact(artifact_name + "best", type='model')
-        best_f1_score = best_artifact.metadata["best_f1_macro"]
+        best_f1_score = best_artifact.metadata["f1_macro"]
     except:
         best_f1_score = 0
 else:
