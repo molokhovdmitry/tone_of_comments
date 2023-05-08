@@ -78,6 +78,6 @@ df.select(df.key, prediction_udf(df.value).alias('value')) \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "localhost:9092") \
     .option("topic", "emotions") \
-    .option("checkpointLocation", "~/projects/comment_analyzer/spark/checkpoints") \
+    .option("checkpointLocation", "~/projects/tone_of_comments/spark/checkpoints") \
     .start() \
     .awaitTermination()

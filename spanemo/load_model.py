@@ -17,7 +17,7 @@ else:
 
 # Load the model from wandb with `best` alias.
 api = wandb.Api()
-artifact_name = "molokhovdmitry/comment_analyzer/emotions_model:"
+artifact_name = "molokhovdmitry/tone_of_comments/emotions_model:"
 artifact = api.artifact(artifact_name + "best", type='model')
 model_version = artifact.version
 print(f"Model version: {model_version}")

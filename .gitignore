@@ -1,7 +1,6 @@
 __pycache__/
 api_key.py
 videos.txt
-airflow/
 *.code-workspace
 spanemo/configs/*
 spanemo/models/*

@@ -71,7 +71,7 @@ class Trainer(object):
         self.early_stop = EarlyStopping(self.filename, patience=2)
 
         # Save dataset artifact to wandb.
-        self.run = wandb.init(project='comment_analyzer')
+        self.run = wandb.init(project='tone_of_comments')
         dataset_artifact = wandb.Artifact('corpus', type='dataset')
         dataset_artifact.add_dir('original_corpus')
         self.run.log_artifact(dataset_artifact)

@@ -10,5 +10,5 @@
 --conf "spark.eventLog.dir=/home/nomad/spark/logs" \
 --num-executors 1 \
 --executor-cores 1 \
---py-files ~/projects/comment_analyzer/packages.zip \
-~/projects/comment_analyzer/spanemo/spark.py >> ~/projects/comment_analyzer/spark/log.txt
+--py-files ~/projects/tone_of_comments/packages.zip \
+~/projects/tone_of_comments/spanemo/spark.py >> ~/projects/tone_of_comments/spark/log.txt

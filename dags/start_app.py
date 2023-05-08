@@ -15,19 +15,19 @@ with DAG(
         """
         webserver = BashOperator(
             task_id='webserver',
-            bash_command="cd ~/projects/comment_analyzer && \
+            bash_command="cd ~/projects/tone_of_comments && \
                           uvicorn app.main:app --reload"
         )
 
         spark = BashOperator(
             task_id='spark',
-            bash_command="cd ~/projects/comment_analyzer && \
+            bash_command="cd ~/projects/tone_of_comments && \
                           ./spark.sh "
         )
 
         hive_saver = BashOperator(
             task_id='hive_saver',
-            bash_command="cd ~/projects/comment_analyzer && \
+            bash_command="cd ~/projects/tone_of_comments && \
                           python -m hive.save"
         )
 

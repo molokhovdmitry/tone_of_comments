@@ -15,7 +15,7 @@ with DAG(
         """
         train_model = BashOperator(
             task_id='train_model',
-            bash_command="cd ~/projects/comment_analyzer/spanemo && \
+            bash_command="cd ~/projects/tone_of_comments/spanemo && \
                           python train.py \
                           --train-path original_corpus/train.txt \
                           --dev-path original_corpus/dev.txt \
@@ -26,7 +26,7 @@ with DAG(
         # Evaluate the model and update on wandb.
         test_model = BashOperator(
             task_id='test_model',
-            bash_command="cd ~/projects/comment_analyzer/spanemo && \
+            bash_command="cd ~/projects/tone_of_comments/spanemo && \
                           python test.py \
                           --test-path original_corpus/test.txt \
                           --model-path wandb"

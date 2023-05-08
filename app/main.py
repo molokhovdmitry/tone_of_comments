@@ -7,7 +7,7 @@ from kafka.producer import produce_to_topic
 from kafka.consumer import find_message
 from kafka.comments_pb2 import CommentList
 
-app = FastAPI(title='comment_analyzer')
+app = FastAPI(title='tone_of_comments')
 
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -15,7 +15,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 @app.get('/')
 def home():
-    return 'comment_analyzer'
+    return 'tone_of_comments'
 
 
 @app.post('/predict')

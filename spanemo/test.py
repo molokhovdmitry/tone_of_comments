@@ -47,7 +47,7 @@ from_wandb = args['--model-path'] == 'wandb'
 if from_wandb:
     # Load the latest model.
     api = wandb.Api()
-    artifact_name = "molokhovdmitry/comment_analyzer/emotions_model:"
+    artifact_name = "molokhovdmitry/tone_of_comments/emotions_model:"
     artifact = api.artifact(artifact_name + "latest", type='model')
     model_path = artifact.file("artifacts")
 
@@ -78,4 +78,3 @@ if from_wandb:
         print("Gave the model `best` alias.")
     artifact.save()
     print("Saved the model.")
-
