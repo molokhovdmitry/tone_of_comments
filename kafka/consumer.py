@@ -4,6 +4,7 @@ from confluent_kafka import Consumer, KafkaError, KafkaException
 
 
 def consume_loop(topics, msg_process):
+    """Modified consume loop from documentation."""
     conf = {'bootstrap.servers': 'localhost:9092',
             'group.id': "spanemo",
             'enable.auto.commit': False,
@@ -75,7 +76,3 @@ def find_message(video_id, topics, keep_trying=True):
         # Close down consumer to commit final offsets.
         consumer.close()
         return message
-
-
-if __name__ == '__main__':
-    print(find_message('EhJAftuGxKA', ['comments'], keep_trying=False))
