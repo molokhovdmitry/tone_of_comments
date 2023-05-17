@@ -17,7 +17,7 @@ Training is done by the `train` **Airflow** DAG. **Weights & Biases** is used fo
 
 [Weights & Biases Project Page](https://wandb.ai/molokhovdmitry/tone_of_comments)
 
-Training DAG graph:
+Training DAG:
 ![Training DAG graph](images/train_dag.png)
 
 The `train_model` task preprocesses the data and trains the model, while the metrics are logged to **Weights & Biases**. Early stopping is used to stop the training process, and the model with the highest validation score is saved to **wandb** with the `latest` alias.
@@ -36,8 +36,9 @@ Currently, it uses the **SpanEmo** model to predict emotions of the comments.
 ## Installation and Running
 ### 1. Create conda environment.
 ```
-conda create --name tone_of_comments --file requirements.txt
+conda create --name tone_of_comments python=3.8
 conda activate tone_of_comments
+pip install -r requirements.txt
 ```
 ### 2. Install [Java](https://www.java.com/en/download/help/index_installing.html), [Hadoop](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html), [Spark](https://spark.apache.org/docs/latest/index.html), [Hive](https://cwiki.apache.org/confluence/display/Hive/GettingStarted), [Kafka](https://kafka.apache.org/quickstart), [Airflow](https://airflow.apache.org/docs/apache-airflow/stable/installation/index.html#using-pypi).
 
@@ -75,6 +76,13 @@ bin/kafka-server-start.sh config/server.properties
 ### 7. Start **Hadoop**.
 ```
 sbin/start-all.sh
+```
+### 9. Start **Hive**.
+```
+bin/hive --service metastore
+```
+```
+bin/hive --service hiveserver2
 ```
 ### 8. Start **Airflow**.
 ```
