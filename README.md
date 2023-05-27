@@ -34,7 +34,7 @@ Currently, it uses the **SpanEmo** model to predict emotions of the comments.
 [GitHub](https://github.com/hasanhuz/SpanEmo), [Paper](https://www.aclweb.org/anthology/2021.eacl-main.135.pdf)
 
 Streaming Query Statistics Example:
-![Streaming Query Statistics Example](images/big.png)
+![Streaming Query Statistics Example](images/spark.png)
 
 ## Installation and Running
 ### 1. Create conda environment.
