@@ -10,9 +10,11 @@ from kafka.comments_pb2 import CommentList
 spark = SparkSession.builder \
 .appName("Comment Saver") \
 .config("spark.sql.warehouse.dir", "/user/hive/warehouse") \
+.config("hive.metastore.uris", "thrift://localhost:9083") \
 .enableHiveSupport() \
 .getOrCreate()
 
+spark.sql("SHOW TABLES;").show()
 
 def save_to_hive(msg):
     """Parse protobuf message and save comments to Hive."""

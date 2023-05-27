@@ -26,7 +26,7 @@ df = spark \
     .format("kafka") \
     .option("kafka.bootstrap.servers", kafka_conf["kafka.bootstrap.servers"]) \
     .option("subscribe", "comments") \
-    .option("startingOffsets", "latest") \
+    .option("startingOffsets", "earliest") \
     .option("failOnDataLoss", "false") \
     .load() \
 
@@ -53,7 +53,6 @@ def predict(data):
     # Get texts from `comments` protobuf and make predictions.
     text_values = [comment.text for comment in comment_list.comments]
     data_loader = preprocess(text_values, preprocessor, tokenizer)
-    print("Making predictions.")
     with torch.no_grad():
         for i, batch in enumerate(data_loader):
             if i == 0:
@@ -61,7 +60,7 @@ def predict(data):
             else:
                 preds += list(model(batch, device)[1])
 
-    # Fill `comments` with emotions.
+    # Fill `comment_list` with emotions.
     emotions = ["anger", "anticipation", "disgust", "fear", "joy",
                 "love", "optimism", "hopeless", "sadness", "surprise", "trust"]
     for comment, pred in zip(comment_list.comments, preds):

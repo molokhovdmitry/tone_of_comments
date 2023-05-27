@@ -11,4 +11,4 @@
 --num-executors 1 \
 --executor-cores 1 \
 --py-files ~/projects/tone_of_comments/packages.zip \
-~/projects/tone_of_comments/spanemo/spark.py >> ~/projects/tone_of_comments/spark/log.txt
+~/projects/tone_of_comments/spanemo/spark.py >> ~/projects/tone_of_comments/spark/log_$(date +"%Y-%m-%d-%H:%M:%S").txt

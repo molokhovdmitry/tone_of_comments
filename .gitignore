@@ -16,3 +16,4 @@ spark-warehouse/
 wandb/
 spanemo/artifacts/*
 _test.py
+env_vars.txt

@@ -1,12 +1,15 @@
 """This file is for YouTube api functions."""
 
 import requests
+import hashlib
+import asyncio
 
 from api.api_key import API_KEY
 from kafka.comments_pb2 import CommentList
 
-def get_comments(video_id):
-    """Gets all `commentThreads` from a YouTube video."""
+async def get_comments(video_id, max_comments=1000):
+    """Yields all `commentThreads` from a YouTube video in batches."""
+
     # Get comments from the first page.
     response = get_response(video_id, max_results=100)
     comment_list = response_to_comments(response)
@@ -15,11 +18,22 @@ def get_comments(video_id):
     while 'nextPageToken' in response.keys():
         response = get_response(video_id, page_token=response['nextPageToken'])
         comment_list.update(response_to_comments(response))
-    
-    # Convert `comments` dict to `CommentList` protobuf.
-    comment_list = dict_to_protobuf(comment_list).SerializeToString()
 
-    return comment_list
+        if len(comment_list) >= max_comments - 100:
+            yield serialize_and_hash(comment_list)
+            comment_list = {}
+            await asyncio.sleep(0)
+
+    if comment_list:
+        yield serialize_and_hash(comment_list)
+        await asyncio.sleep(0)
+
+
+def serialize_and_hash(comment_list):
+    comment_list = dict_to_protobuf(comment_list).SerializeToString()
+    key = hashlib.sha1(comment_list).hexdigest()
+    return comment_list, key
+
 
 def get_response(video_id, page_token=None, max_results=100):
     """Gets the response from YouTube API and converts it to JSON."""
@@ -34,17 +48,20 @@ def get_response(video_id, page_token=None, max_results=100):
     response = requests.get(url, params=payload)
     return response.json()
 
+
 def response_to_comments(response):
-    """Converts JSON response to `comments` dict."""
+    """Converts JSON response to `comment_list` dict."""
     comment_list = {}
     for comment in response['items']:
         comment = comment['snippet']['topLevelComment']
+        channel_id = comment['id']
+        comment = comment['snippet']
         try:
-            comment_list[comment['id']] = {
-                    'video_id': comment['snippet']['videoId'],
-                    'channel_id': comment['snippet']['authorChannelId']['value'],
-                    'text': comment['snippet']['textOriginal'],
-                    'date': comment['snippet']['updatedAt'].replace('T', ' ')[:-1],
+            comment_list[channel_id] = {
+                    'video_id': comment['videoId'],
+                    'channel_id': comment['authorChannelId']['value'],
+                    'text': comment['textOriginal'],
+                    'date': comment['updatedAt'].replace('T', ' ')[:-1],
                 }
         except Exception as e:
             print(f"Error: {e}\nComment: {comment}")

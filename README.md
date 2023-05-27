@@ -5,12 +5,12 @@
 This is a pet project I am making for the purpose of learning and gaining practical experience with **Spark**, **Kafka**, **Hive**, and **Airflow**. Its main objective is to predict the sentiment of comments posted on YouTube videos.
 
 
-![Web App](images/web_app.png)
+![Web App](images/app.gif)
 
 By using the functionality of **Kafka** and **Spark**, the project can be extended to use multiple prediction models and message sources simultaneously.
 
 ### How it works
-A **FastAPI** web application obtains comments from an API and produces them as `protobuf` messages into the `comments` **Kafka** topic. The application then waits for predictions to be received in the `emotions` topic. **Confluent Kafka** library is used to produce and receive messages. A **Spark Streaming** application is used to load the comments from the `comments` topic, predict the emotions using a UDF, and produce the predictions as messages into the `emotions` topic. After the predictions are produced, the web application loads the predictions and visualizes them. Additionally, the predictions are saved to a **Hive** table with a separate script. The web application, Spark Streaming application, and a script for Hive are initiated through the `start_app` **Airflow** DAG.
+A **FastAPI** web application obtains comments from an API and produces them as `protobuf` messages into the `comments` **Kafka** topic in batches where hashed comments are used as keys for **Kafka** messages. The application then waits for predictions to be received in the `emotions` topic. **Confluent Kafka** library is used to produce and receive messages. A **Spark Streaming** application is used to load the comments from the `comments` topic, predict the emotions using a UDF, and produce the predictions as messages into the `emotions` topic. After the predictions are produced, the web application loads the predictions and visualizes them. Additionally, the predictions are saved to a **Hive** table with a separate script. The web application, Spark Streaming application, and a script for Hive are initiated through the `start_app` **Airflow** DAG.
 
 ### Model Training
 Training is done by the `train` **Airflow** DAG. **Weights & Biases** is used for visualization of the training process and storage of the model and dataset artifacts.
@@ -18,7 +18,7 @@ Training is done by the `train` **Airflow** DAG. **Weights & Biases** is used fo
 [Weights & Biases Project Page](https://wandb.ai/molokhovdmitry/tone_of_comments)
 
 Training DAG:
-![Training DAG graph](images/train_dag.png)
+![Training DAG](images/train_dag.png)
 
 The `train_model` task preprocesses the data and trains the model, while the metrics are logged to **Weights & Biases**. Early stopping is used to stop the training process, and the model with the highest validation score is saved to **wandb** with the `latest` alias.
 
@@ -26,12 +26,15 @@ The `test_model` task loads the model with the `latest` alias. If there is an ex
 
 The `trigger_self` task just restarts the DAG for continuous training.
 
-### Model Spark Application
+### Spark Application
 The Spark streaming application loads the model from the **wandb** project with the `best` alias and uses it for inference. The project could be extended to use multiple Spark applications.
 
 Currently, it uses the **SpanEmo** model to predict emotions of the comments.
 
 [GitHub](https://github.com/hasanhuz/SpanEmo), [Paper](https://www.aclweb.org/anthology/2021.eacl-main.135.pdf)
+
+Streaming Query Statistics Example:
+![Streaming Query Statistics Example](images/big.png)
 
 ## Installation and Running
 ### 1. Create conda environment.
@@ -92,5 +95,3 @@ airflow webserver
 airflow scheduler
 ```
 ### 9. Trigger the `train` DAG in **Airflow** interface to start the training or the `start_app` DAG to start the app at `localhost:8000`.
-
-## Bugs and Issues

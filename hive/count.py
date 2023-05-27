@@ -4,6 +4,7 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder \
 .appName("Check Hive") \
 .config("spark.sql.warehouse.dir", "/user/hive/warehouse") \
+.config("hive.metastore.uris", "thrift://localhost:9083") \
 .enableHiveSupport() \
 .getOrCreate()
 
