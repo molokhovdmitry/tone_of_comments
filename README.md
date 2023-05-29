@@ -2,7 +2,7 @@
 
 ## About
 ### Introduction
-This is a pet project I am making for the purpose of learning and gaining practical experience with **Spark**, **Kafka**, **Hive**, and **Airflow**. Its main objective is to predict the sentiment of comments posted on YouTube videos.
+This is a pet project I made for the purpose of learning and gaining practical experience with **Spark**, **Kafka**, **Hive**, and **Airflow**. Its main objective is to predict the sentiment of comments posted on YouTube videos.
 
 
 ![Web App](images/app.gif)
